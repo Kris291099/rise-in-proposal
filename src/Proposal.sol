@@ -119,8 +119,6 @@ contract ProposalContract {
         }
     }
 
-    // ****************** Query Functions ***********************
-
     function isVoted(address _address) public view returns (bool) {
         for (uint i = 0; i < voted_addresses.length; i++) {
             if (voted_addresses[i] == _address) {
