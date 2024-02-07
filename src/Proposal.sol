@@ -2,23 +2,29 @@
 pragma solidity ^0.8.18;
 
 contract ProposalContract {
+    // ****************** Data ***********************
+
+    //Owner
     address owner;
+
     uint256 private counter;
 
     struct Proposal {
-        string title;
-        string description;
-        uint256 approve;
-        uint256 reject;
-        uint256 pass;
-        uint256 total_vote_to_end;
-        bool current_state;
-        bool is_active;
+        string title; // Describe the title
+        string description; // Description of the proposal
+        uint256 approve; // Number of approve votes
+        uint256 reject; // Number of reject votes
+        uint256 pass; // Number of pass votes
+        uint256 total_vote_to_end; // When the total votes in the proposal reaches this limit, proposal ends
+        bool current_state; // This shows the current state of the proposal, meaning whether if passes of fails
+        bool is_active; // This shows if others can vote to our contract
     }
 
-    mapping(uint256 => Proposal) proposal_history;
+    mapping(uint256 => Proposal) proposal_history; // Recordings of previous proposals
+
     address[] private voted_addresses;
 
+    //constructor
     constructor() {
         owner = msg.sender;
         voted_addresses.push(msg.sender);
@@ -35,9 +41,11 @@ contract ProposalContract {
     }
 
     modifier newVoter(address _address) {
-        require(!isVoted(_address), "Address has already voted");
+        require(!isVoted(_address), "Address has not voted yet");
         _;
     }
+
+    // ****************** Execute Functions ***********************
 
     function setOwner(address new_owner) external onlyOwner {
         owner = new_owner;
@@ -87,13 +95,8 @@ contract ProposalContract {
         }
     }
 
-    function isVoted(address _address) private view returns (bool) {
-        for (uint i = 0; i < voted_addresses.length; i++) {
-            if (voted_addresses[i] == _address) {
-                return true;
-            }
-        }
-        return false;
+    function terminateProposal() external onlyOwner active {
+        proposal_history[counter].is_active = false;
     }
 
     function calculateCurrentState() private view returns (bool) {
@@ -103,19 +106,37 @@ contract ProposalContract {
         uint256 reject = proposal.reject;
         uint256 pass = proposal.pass;
 
-        // Adjust the pass votes if the number of pass votes is odd
-        if (pass % 2 == 1) {
+        if (proposal.pass % 2 == 1) {
             pass += 1;
         }
 
-        // Divide the pass votes by  2
         pass = pass / 2;
 
-        // Check if the number of approve votes is strictly greater than the sum of reject and adjusted pass votes
         if (approve > reject + pass) {
             return true;
         } else {
             return false;
         }
+    }
+
+    // ****************** Query Functions ***********************
+
+    function isVoted(address _address) public view returns (bool) {
+        for (uint i = 0; i < voted_addresses.length; i++) {
+            if (voted_addresses[i] == _address) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getCurrentProposal() external view returns (Proposal memory) {
+        return proposal_history[counter];
+    }
+
+    function getProposal(
+        uint256 number
+    ) external view returns (Proposal memory) {
+        return proposal_history[number];
     }
 }
